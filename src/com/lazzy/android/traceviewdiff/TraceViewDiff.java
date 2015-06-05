@@ -1,5 +1,11 @@
+/**
+ * Main entry of AndroidTraceViewDiff tool
+ */
 package com.lazzy.android.traceviewdiff;
-
+/**
+ * @author Li  jzqlin@gmail.com
+ *
+ */
 public class TraceViewDiff {
 	
 	   public static void main(String[] args) {

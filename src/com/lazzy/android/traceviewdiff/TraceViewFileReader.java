@@ -1,21 +1,12 @@
-/*
- * Copyright (C) 2006 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ * Parse traceview file
  */
 
 package com.lazzy.android.traceviewdiff;
-
+/**
+ * @author Li  jzqlin@gmail.com
+ *
+ */
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,12 +47,15 @@ public class TraceViewFileReader {
     private long mTotalRealTime;
     private int mRecordSize;
     private ClockSource mClockSource;
-
+    
+    private HashMap<Integer, MethodData> mMethodData = new HashMap<Integer, MethodData>();
+    private HashMap<Integer, ThreadData> mThreadData = new HashMap<Integer, ThreadData>();
+    
     // A regex for matching the thread "id name" lines in the .key file
     private static final Pattern mIdNamePattern = Pattern.compile("(\\d+)\t(.*)");  //$NON-NLS-1$
 
     public TraceViewFileReader(String traceFileName) throws IOException {
-        mTraceFileName = traceFileName;
+        mTraceFileName = traceFileName;                
         generateTrees();
     }
 
@@ -300,6 +294,13 @@ public class TraceViewFileReader {
         if (name == null) name = "(unknown)";
 
         int id = Integer.decode(idStr);
+        
+        //build thread data table
+        ThreadData threadData = new ThreadData();
+        threadData.setThreadId(id);
+        threadData.setThreadName(name);
+        
+        mThreadData.put(Integer.valueOf(id), threadData);
     }
 
     void parseMethod(String line) {
@@ -325,7 +326,22 @@ public class TraceViewFileReader {
                 lineNumber = Integer.decode(tokens[3]);
             }
         }
+        
+        //build method table
+        MethodData methodData = new MethodData();
+        methodData.setMethodId(id);
+        methodData.setMethodName(methodName);
+        methodData.setClassName(className);
+        methodData.setMethodSignature(signature);
+        methodData.setPathName(pathname);
+        methodData.setLineNo(lineNumber);
+        
+        if (mMethodData.containsKey(Integer.valueOf(id))) {
+        	System.err.printf("duplicated method id found!");
+        	return ;
+        }
 
+        mMethodData.put(id, methodData);
     }
 
     private String constructPathname(String className, String pathname) {
