@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,20 +45,34 @@ public class TraceViewFileReader {
 
     private int mVersionNumber;    
     private String mTraceFileName;
-	private long mTotalCpuTime;
-    private long mTotalRealTime;
     private int mRecordSize;
     private ClockSource mClockSource;
     
-    private HashMap<Integer, MethodData> mMethodData = new HashMap<Integer, MethodData>();
-    private HashMap<Integer, ThreadData> mThreadData = new HashMap<Integer, ThreadData>();
+    private HashMap<Integer, MethodData> mMethodMap = new HashMap<Integer, MethodData>();
+    private HashMap<Integer, ThreadData> mThreadMap = new HashMap<Integer, ThreadData>();
     
     // A regex for matching the thread "id name" lines in the .key file
     private static final Pattern mIdNamePattern = Pattern.compile("(\\d+)\t(.*)");  //$NON-NLS-1$
+    
+    private MethodData mContextSwitch;
+    private MethodData mRootMethod;
 
     public TraceViewFileReader(String traceFileName) throws IOException {
         mTraceFileName = traceFileName;                
-        generateTrees();
+        mRootMethod = new MethodData();
+        mRootMethod.setMethodId(0);
+        mRootMethod.setMethodName("(root method)");
+
+        mContextSwitch = new MethodData();
+        mContextSwitch.setMethodId(-1);
+        mContextSwitch.setMethodName("(context switch)");
+        
+        mMethodMap.put(0, mRootMethod);
+        mMethodMap.put(-1, mContextSwitch);
+    }
+    
+    public void parse() throws IOException {
+    	 generateTrees();
     }
 
     void generateTrees() throws IOException {
@@ -128,6 +144,12 @@ public class TraceViewFileReader {
         final boolean haveThreadClock = mClockSource != ClockSource.WALL;
         final boolean haveGlobalClock = mClockSource != ClockSource.THREAD_CPU;
 
+        if (!haveThreadClock || !haveGlobalClock) {
+        	System.err.printf("only support when have both thread clock and global clock\n");
+        	return ;
+        }
+
+        
         // Parse all call records to obtain elapsed time information.
         for (;;) {
             int threadId;
@@ -172,30 +194,111 @@ public class TraceViewFileReader {
             } catch (BufferUnderflowException ex) {
                 break;
             }
+            
+            
+            ThreadData threadData = mThreadMap.get(threadId);
+            if (threadData == null) {
+                String name = String.format("[%1$d]", threadId);  //$NON-NLS-1$
+                threadData = new ThreadData(threadId, name, mRootMethod);
+                
+                mThreadMap.put(threadId, threadData);	
+            }
 
+            long elapsedCpuTime = 0;
+            long elapsedRealTime = 0;
+            if (!threadData.hasSetStartTime()) {
+            	//set the thread's start time
+                threadData.setCpuTimeStart(threadTime);
+                threadData.setRealTimeStart(globalTime);
+                
+                threadData.setCpuTimeEnd(threadTime);
+                threadData.setRealTimeEnd(globalTime);
+            }
+            else {
+            	//update the thread's end time
+            	elapsedCpuTime = threadTime - threadData.getCpuTimeEnd();
+            	elapsedRealTime = globalTime - threadData.getRealTimeEnd();
+
+            	threadData.setCpuTimeEnd(threadTime);
+            	threadData.setRealTimeEnd(globalTime);
+            }
+
+            //context switch
+            long sleepTime = elapsedRealTime - elapsedCpuTime;
+            if (sleepTime > MIN_CONTEXT_SWITCH_TIME_USEC) {
+
+                long beforeSwitch = elapsedCpuTime / 2;
+                long afterSwitch = elapsedCpuTime - beforeSwitch;
+                long switchContextRealTimeStart = globalTime - elapsedRealTime + beforeSwitch;
+                long switchContextRealTimeEnd = globalTime - afterSwitch;
+                long switchContextCpuTimeStart = threadTime - afterSwitch;
+                long switchContextCpuTimeEnd = switchContextCpuTimeStart;
+                
+                threadData.callEnter(mContextSwitch, switchContextCpuTimeStart, switchContextRealTimeStart);
+                threadData.callExit(mContextSwitch, switchContextCpuTimeEnd, switchContextRealTimeEnd);
+            }
+            
 			int methodAction = methodId & 0x03;
 			methodId = methodId & ~0x03;
+
+            //find method data object, create if not found
+            MethodData methodData = mMethodMap.get(methodId);
+            if (methodData == null) {
+            	methodData = new MethodData();
+            	String name = String.format("(0x%1$x)", methodId);  //$NON-NLS-1$
+            	methodData.setMethodId(methodId);
+            	methodData.setMethodName(name);
+            		
+            	mMethodMap.put(methodId, methodData);
+            }
+            
 			switch (methodAction) 
 			{
 				case METHOD_TRACE_ENTER: 
 					{
-						System.out.printf("threadId:" + threadId + ",methodId :" + methodId + ",action METHOD_TRACE_ENTER,globalTime:"
-								+ globalTime + ",threadTime:" + threadTime + "\n");			
+//						System.out.printf("threadId:%d,methodId:%d,%s ENTER,globalTime:%d, threadTime:%d\n", 
+//								threadId, methodId, methodData.getMethodName(), globalTime, threadTime);
+						threadData.callEnter(methodData, threadTime, globalTime);
 						break;
 					}
 				case METHOD_TRACE_EXIT:
 				case METHOD_TRACE_UNROLL: 
 					{
-						System.out.printf("threadId:" + threadId + ",methodId :" + methodId + ",action METHOD_TRACE_EXIT/UNROLL,globalTime:"
-								+ globalTime + ",threadTime:" + threadTime + "\n");			
-
+//						System.out.printf("threadId:%d,methodId:%d,%s EXIT,globalTime:%d, threadTime:%d\n", 
+//								threadId, methodId, methodData.getMethodName(), globalTime, threadTime);
+						threadData.callExit(methodData, threadTime, globalTime);
 						break;
 					}
 				default:
 					throw new RuntimeException("Unrecognized method action: " + methodAction);
 			}
         }
+        
+     
+        
+      //all threads finish tracing
+      for (ThreadData threadData : mThreadMap.values()) {
+    	  threadData.finish();
+//    	  System.out.printf("thread:%s real time cost:%d, cpu time cost:%d\n", threadData.getThreadName(), 
+//    			  threadData.getRealTimeEnd() - threadData.getRealTimeStart(), 
+//    			  threadData.getCpuTimeEnd() - threadData.getCpuTimeStart());
 
+      }
+      
+      //TODO:now we should have the elapsed time for each call
+//      for (MethodData method : mMethodMap.values()) {
+//    	  if (method.getSignature() != null) {
+//    		  if (method.getCallNum() > 0) {
+//    			  System.out.printf("%s.%s, inclusiveCpuTime:%d, inclusiveRealTime:%d, call times:%d, cpuTime:%d/call, realTime:%d/call\n", 
+//    				  method.getClassName(), method.getMethodName(), method.getTopInclusiveCpuTime(), method.getTopInclusiveRealTime(),
+//    				  method.getCallNum(), method.getTopInclusiveCpuTime()/method.getCallNum(),
+//    				  method.getTopInclusiveRealTime()/method.getCallNum());
+//    		  }
+//    	  }
+//      }
+      
+      
+      return ;
    }
 
     static final int PARSE_VERSION = 0;
@@ -296,11 +399,9 @@ public class TraceViewFileReader {
         int id = Integer.decode(idStr);
         
         //build thread data table
-        ThreadData threadData = new ThreadData();
-        threadData.setThreadId(id);
-        threadData.setThreadName(name);
+        ThreadData threadData = new ThreadData(id, name, mRootMethod);
         
-        mThreadData.put(Integer.valueOf(id), threadData);
+        mThreadMap.put(id, threadData);
     }
 
     void parseMethod(String line) {
@@ -332,16 +433,16 @@ public class TraceViewFileReader {
         methodData.setMethodId(id);
         methodData.setMethodName(methodName);
         methodData.setClassName(className);
-        methodData.setMethodSignature(signature);
+        methodData.setSignature(signature);
         methodData.setPathName(pathname);
         methodData.setLineNo(lineNumber);
         
-        if (mMethodData.containsKey(Integer.valueOf(id))) {
+        if (mMethodMap.containsKey(id)) {
         	System.err.printf("duplicated method id found!");
         	return ;
         }
 
-        mMethodData.put(id, methodData);
+        mMethodMap.put(id, methodData);
     }
 
     private String constructPathname(String className, String pathname) {
@@ -351,4 +452,7 @@ public class TraceViewFileReader {
             pathname = className.substring(0, index + 1) + pathname;
         return pathname;
     }
+    
+    public HashMap<Integer, MethodData> getMethodMap() { return mMethodMap; }
+    public HashMap<Integer, ThreadData> getThreadMap() { return mThreadMap; }
 }

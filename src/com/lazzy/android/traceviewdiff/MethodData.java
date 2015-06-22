@@ -17,17 +17,19 @@ public class MethodData {
 	private String mPathName;
 	private Integer mMethodId;
 	private String mMethodName;
-	private String mMethodSignature;
+	private String mSignature;
 
-	private long mTotalElapsedRealTime;
-	private long mTotalElapsedCPUTime;
-
-	private ArrayList<CallData> mCallList;
+	private long mTopInclusiveRealTime; // real time spend on this method
+	private long mTopInclusiveCpuTime;  // cpu time spend on this method
+	
+	private int mCallNum;
+	private int mRecursiveCallNum;
 	
 	public MethodData() {
-		mTotalElapsedRealTime = 0;
-		mTotalElapsedCPUTime = 0;
-		mCallList = new ArrayList<CallData>();
+		mClassName = null;
+		mPathName = null;
+		mMethodName = null;
+		mSignature = null;
 	}
 
 	public String getClassName() { return mClassName; }
@@ -50,18 +52,25 @@ public class MethodData {
 
 	public void setMethodName(String methodName) { this.mMethodName = methodName; }
 
-	public String getMethodSignature() { return mMethodSignature; }
+	public String getSignature() { return mSignature; }
 
-	public void setMethodSignature(String methodSignature) { this.mMethodSignature = methodSignature; }
+	public void setSignature(String methodSignature) { this.mSignature = methodSignature; }
 
-	public long getTotalElapsedRealTime() { return mTotalElapsedRealTime; }
-
-	public void addElapsedRealTime(long realTime) { mTotalElapsedRealTime += realTime; }
-
-	public long getTotalElapsedCPUTime() { return mTotalElapsedCPUTime; }
-
-	public void addElapsedCPUTime(long CPUTime) { mTotalElapsedCPUTime += CPUTime; }
+	public long getTopInclusiveRealTime() { return mTopInclusiveRealTime; }
+	public long getTopInclusiveCpuTime() { return mTopInclusiveCpuTime; }
 	
-	public ArrayList<CallData> callList() { return mCallList; }
+	public void updateCallFinish(boolean isRecursive, long elapsedRealTime, long elapsedCpuTime) {
+		mCallNum++;
+		if (isRecursive) {
+			mRecursiveCallNum++;
+		}
+		else {
+			mTopInclusiveRealTime += elapsedRealTime;
+			mTopInclusiveCpuTime += elapsedCpuTime;
+		}
+	}
 
+	public int getCallNum() { return mCallNum; }
+	
+	public int getRecursiveCallTimes() { return mRecursiveCallNum; }
 }

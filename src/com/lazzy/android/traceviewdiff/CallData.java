@@ -13,25 +13,16 @@ import java.util.ArrayList;
 public class CallData {
 	private MethodData mMethodData;
 	private CallData mParent;
-	private ArrayList<CallData> mChildrens;
 	
-	private long mElapsedRealTime;
-	private long mElapsedCPUTime;
 	private long mRealTimeEnter;
-	private long mRealTimeExitOrUnroll;
-	private long mCPUTimeEnter;
-	private long mCPUTimeExitOrUnroll;
+	private long mRealTimeExit;
+	private long mCpuTimeEnter;
+	private long mCpuTimeExit;
+	private boolean mIsRecursive = false;
 
 	public CallData(MethodData methodData, CallData parent) {
 		mMethodData = methodData;
 		mParent = parent;
-		mChildrens = new ArrayList<CallData>();
-		mRealTimeEnter = 0;
-		mRealTimeExitOrUnroll = 0;
-		mCPUTimeEnter = 0;
-		mCPUTimeExitOrUnroll = 0;
-		mElapsedRealTime = 0;
-		mElapsedCPUTime = 0;
 	}
 	
 	/*
@@ -41,33 +32,25 @@ public class CallData {
 	public MethodData getMethodData() { return mMethodData; }
 	
 	public void setRealTimeEnter(long realTime) { mRealTimeEnter = realTime; }
-	public void setRealTimeExitOrUnroll(long realTime) { mRealTimeExitOrUnroll = realTime; }
+	public void setRealTimeExit(long realTime) { mRealTimeExit = realTime; }
 
-	public void setCPUTimeEnter(long CPUTime) { mCPUTimeEnter = CPUTime; }
-	public void setCPUTimeExitOrUnroll(long CPUTime) { mCPUTimeExitOrUnroll = CPUTime; }
-
-	public long getElapsedRealTime() { 
-		mElapsedRealTime = mRealTimeExitOrUnroll - mRealTimeEnter;
-		return mElapsedRealTime; 
-	}
+	public void setCpuTimeEnter(long CpuTime) { mCpuTimeEnter = CpuTime; }
+	public void setCpuTimeExit(long CpuTime) { mCpuTimeExit = CpuTime; }
+		
+	public void setIsRecursive(boolean isRecursive)  { mIsRecursive = isRecursive; }
 	
-	public long getElpasedCPUTime() { 
-		mElapsedCPUTime = mCPUTimeExitOrUnroll - mCPUTimeEnter;
-		return mElapsedCPUTime; 
+	//finish a call
+	public void finish() {
+		long elapsedRealTime = mRealTimeExit - mRealTimeEnter;
+		long elapsedCpuTime = mCpuTimeExit - mCpuTimeEnter;
+        
+        if (mMethodData != null) {
+        	mMethodData.updateCallFinish(mIsRecursive, elapsedRealTime, elapsedCpuTime);
+        }
 	}
-	
 	
 	/*
 	 * As a tree node
 	 */
-
 	public CallData getParent() { return mParent; }
-	
-	public ArrayList<CallData> getChildrens() { return mChildrens; }
-	
-	public void addChild(CallData child) {
-		mChildrens.add(child);
-	}
-
-
 }
