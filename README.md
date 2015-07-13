@@ -3,6 +3,8 @@ Compare the same method's inclusive real time cost between tow Anroid TraceView 
 
 ## Useage: 
 ```java com.lazzy.android.difftraceview.ConsoleMain  traceview_file1  traceview_file2```
+or
+```java -jar diff_traceview.jar traceview_file1  traceview_file2```
 
 ## Output:
 
