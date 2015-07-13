@@ -96,13 +96,13 @@ public class DiffTraceView {
     }
 
 
-    public void consolePrint() {
+    public void consolePrint(String filter) {
         System.out.printf("\n\n");
         System.out.printf("%-100s%-25s%-25s%-18s\n", "Method Name", "Inc RealTime(ms) File1", "Inc RealTime(ms) File2", "Diff(ms) File2-File1");
         System.out.printf("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
         for (MethodCompareData methodCompare : methodCompares) {
             String name = methodCompare.oldMethod.getClassName() + "." + methodCompare.oldMethod.getMethodName() + "(..)";
-            if (name.contains("tencent") && methodCompare.timeCostDiff/1000 != 0) {
+            if (name.contains(filter) && methodCompare.timeCostDiff/1000 != 0) {
                 System.out.printf("%-100s%-25d%-25d%-18d\n", name, methodCompare.oldMethod.getTopInclusiveRealTime()/1000, methodCompare.newMethod.getTopInclusiveRealTime()/1000,
                         methodCompare.timeCostDiff/1000);
             }
