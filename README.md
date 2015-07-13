@@ -1,5 +1,5 @@
 # DiffAndroidTraceView
-Find the difference of method's inclusive real time cost between tow Anroid TraceView file.
+Compare the same method's inclusive real time cost between tow Anroid TraceView file.
 
 ## Useage: 
 ```java com.lazzy.android.difftraceview.ConsoleMain  traceview_file1  traceview_file2```
