@@ -12,7 +12,7 @@ public class ConsoleMain {
 	            filePath2 = args[1];
 	        }
 	        else {
-	            System.out.printf("Usage: java TraceMain old_trace_file, new_trace_file\n");
+	            System.out.printf("Usage: java -jar diff_traceview.jar old_trace_file, new_trace_file\n");
 	            return ;
 	        }
 

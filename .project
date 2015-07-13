@@ -14,4 +14,10 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>BIN</name>
+			<value>file:/Users/chilylin/Workplace/GitHub/AndroidTraceViewDiff/bin</value>
+		</variable>
+	</variableList>
 </projectDescription>
