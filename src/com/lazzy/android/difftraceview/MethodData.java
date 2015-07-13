@@ -2,7 +2,7 @@
  * Method data container for each method.
  * A method can be called many times.
  */
-package com.lazzy.android.traceviewdiff;
+package com.lazzy.android.difftraceview;
 
 import java.util.ArrayList;
 

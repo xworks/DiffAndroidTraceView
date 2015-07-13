@@ -2,7 +2,7 @@
  * Parse traceview file
  */
 
-package com.lazzy.android.traceviewdiff;
+package com.lazzy.android.difftraceview;
 /**
  * @author Li  jzqlin@gmail.com
  *

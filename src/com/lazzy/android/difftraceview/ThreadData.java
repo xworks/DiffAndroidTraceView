@@ -1,4 +1,4 @@
-package com.lazzy.android.traceviewdiff;
+package com.lazzy.android.difftraceview;
 
 import java.util.ArrayList;
 import java.util.HashMap;
