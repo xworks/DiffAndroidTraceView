@@ -14,9 +14,6 @@ public class ConsoleMain {
 	            if (args.length > 2) {
 	            	filter = args[2];
 	            }
-	            else {
-	            	filter = "tencent"; //default filter string
-	            }
 	        }
 	        else {
 	            System.out.printf("Usage: java -jar diff_traceview.jar old_trace_file new_trace_file filter_string\n");
