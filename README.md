@@ -2,10 +2,10 @@
 Compare the same method's inclusive real time cost between tow Anroid TraceView file. You can use it for traceing the method's cpu performance between different versions.
 
 ## Useage: 
-```java com.lazzy.android.difftraceview.ConsoleMain  traceview_file1  traceview_file2```
+```java com.lazzy.android.difftraceview.ConsoleMain  traceview_file1  traceview_file2  filter_string```
 
 or
-```java -jar diff_traceview.jar traceview_file1  traceview_file2```
+```java -jar diff_traceview.jar traceview_file1  traceview_file2 filter_string```
 
 ## Output:
 
