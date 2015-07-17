@@ -107,7 +107,19 @@ public class DiffTraceView {
                         methodCompare.timeCostDiff/1000);
             }
         }
-
+        
+    }
+    
+    public void consolePrintNewMethods(String filter) {
+    	System.out.printf("\n\n");
+        System.out.println("Compare to File1, New Methods of File2");
+        System.out.printf("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+        for (MethodData newMethod : newAddedMethods) {        	
+            String name = newMethod.getClassName() + "." + newMethod.getMethodName() + "(..)";
+            if (name.contains(filter)) {
+            	System.out.println(name);
+            }
+        }
     }
 
 

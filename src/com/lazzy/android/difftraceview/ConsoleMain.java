@@ -24,7 +24,19 @@ public class ConsoleMain {
 	        	DiffTraceView traceViewDiff = new DiffTraceView();
 	        	traceViewDiff.process(filePath1, filePath2);
 	        	
+	        	System.out.println("");
+
+	        	if (filter.length() != 0) {
+	        		System.out.println("filter string: " + filter);
+	        	}
+	        	else {
+	        		System.out.println("filter string: NO FILTER STRING");
+	        	}
+	        		        	
 	        	traceViewDiff.consolePrint(filter);
+	        	
+	        	traceViewDiff.consolePrintNewMethods(filter);
+
 	        }
 	        catch(Exception e) {
 	            e.printStackTrace();
